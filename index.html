@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rypd - Gym Progress Tracker Demo</title>
+    <!-- Google Fonts: Oswald for headings, Roboto for body -->
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Custom CSS for fonts and animations -->
+    <style>
+        /* Apply Roboto to body, Oswald to headings */
+        body {
+            font-family: 'Roboto', sans-serif;
+        }
+        h1, h2, h3 {
+            font-family: 'Oswald', sans-serif;
+        }
+
+        /* Message display animation */
+        .fade-in {
+            animation: fadeIn 0.3s forwards;
+        }
+        .fade-out {
+            animation: fadeOut 0.3s forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translate(-50%, -10px); }
+            to { opacity: 1; transform: translate(-50%, 0); }
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translate(-50%, 0); }
+            to { opacity: 0; transform: translate(-50%, -10px); }
+        }
+
+        /* Like button pulse animation */
+        .pulse-animation {
+            animation: pulse 0.5s ease-in-out;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        /* Loading spinner */
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3); /* Lighter border for dark background */
+            border-left-color: #00FFFF; /* Accent color for spinner */
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Splash screen specific animations */
+        .splash-title-enter {
+            animation: splashTitleEnter 1.5s ease-out forwards;
+            opacity: 0;
+            transform: scale(0.5);
+        }
+        @keyframes splashTitleEnter {
+            0% { opacity: 0; transform: scale(0.5); }
+            70% { opacity: 1; transform: scale(1.1); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        .splash-button-enter {
+            animation: splashButtonEnter 1s ease-out forwards;
+            opacity: 0;
+            transform: translateY(20px);
+            animation-delay: 1s; /* Delay after title */
+        }
+        @keyframes splashButtonEnter {
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Splash screen exit animation */
+        .splash-exit-animation {
+            animation: splashExit 0.8s ease-in-out forwards;
+        }
+        @keyframes splashExit {
+            0% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-100vh); }
+        }
+
+        /* App entry animation */
+        .app-enter-animation {
+            animation: appEnter 0.8s ease-in-out forwards;
+            animation-delay: 0.2s; /* Slight delay to overlap with splash exit */
+            opacity: 0;
+            transform: translateY(100vh);
+        }
+        @keyframes appEnter {
+            0% { opacity: 0; transform: translateY(100vh); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Splash screen background and particle animations */
+        #splash-screen.splash-background-gradient {
+            background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+                        rgba(147, 51, 234, 0.15) 0%, /* purple-600 with opacity */
+                        rgba(59, 130, 246, 0.1) 30%,  /* blue-500 with opacity */
+                        rgba(0, 0, 0, 0.8) 70%); /* fade to black */
+            animation: radialPulse 10s infinite alternate;
+            background-size: 200% 200%; /* Allows for movement */
+            background-position: center center;
+            overflow: hidden; /* Hide particles outside screen */
+        }
+
+        @keyframes radialPulse {
+            0% { background-size: 200% 200%; background-position: 40% 40%; }
+            50% { background-size: 220% 220%; background-position: 60% 60%; }
+            100% { background-size: 200% 200%; background-position: 40% 40%; }
+        }
+
+        .splash-particle {
+            position: absolute;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0) 70%);
+            border-radius: 50%;
+            opacity: 0;
+            animation: particleFloatFade 15s infinite ease-in-out;
+            pointer-events: none; /* Allow clicks through particles */
+        }
+
+        @keyframes particleFloatFade {
+            0% { opacity: 0; transform: translate(0, 0) scale(0.5); }
+            20% { opacity: 0.5; }
+            50% { transform: translate(var(--x-offset), var(--y-offset)) scale(1); opacity: 0.8; }
+            80% { opacity: 0.3; }
+            100% { opacity: 0; transform: translate(calc(var(--x-offset) * 2), calc(var(--y-offset) * 2)) scale(0.5); }
+        }
+
+        /* Page transition animations */
+        .page-exit-animation {
+            animation: pageExit 0.3s ease-out forwards;
+        }
+        @keyframes pageExit {
+            0% { opacity: 1; transform: translateX(0); }
+            100% { opacity: 0; transform: translateX(-20px); } /* Slide left out */
+        }
+
+        .page-enter-animation {
+            animation: pageEnter 0.3s ease-out forwards;
+            opacity: 0;
+            transform: translateX(20px); /* Start from right */
+        }
+        @keyframes pageEnter {
+            0% { opacity: 0; transform: translateX(20px); }
+            100% { opacity: 1; transform: translateX(0); }
+        }
+
+        /* AI Chat specific background animation */
+        .ai-chat-background {
+            background: radial-gradient(circle at center,
+                        rgba(0, 255, 255, 0.05) 0%, /* Cyan with opacity */
+                        rgba(128, 0, 128, 0.05) 30%, /* Purple with opacity */
+                        rgba(0, 0, 0, 0.8) 70%); /* Fade to black */
+            animation: aiRadialPulse 15s infinite alternate;
+            background-size: 200% 200%;
+            background-position: center center;
+        }
+
+        @keyframes aiRadialPulse {
+            0% { background-size: 200% 200%; background-position: 50% 50%; }
+            50% { background-size: 210% 210%; background-position: 45% 55%; }
+            100% { background-size: 200% 200%; background-position: 50% 50%; }
+        }
+
+        /* Typing indicator dots animation */
+        .typing-indicator span {
+            animation: blink 1s infinite;
+        }
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 0.2; }
+            50% { opacity: 1; }
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-black text-[#F0F0F0] flex flex-col items-center p-4">
+
+    <!-- Splash Screen: The first thing the user sees -->
+    <div id="splash-screen" class="fixed inset-0 bg-black flex flex-col items-center justify-center z-50 splash-background-gradient">
+        <!-- Animated Particles/Glows -->
+        <div class="splash-particle" style="width: 30px; height: 30px; top: 10%; left: 15%; animation-delay: 0s; --x-offset: 50px; --y-offset: 80px;"></div>
+        <div class="splash-particle" style="width: 20px; height: 20px; top: 80%; left: 25%; animation-delay: 3s; --x-offset: -70px; --y-offset: -40px;"></div>
+        <div class="splash-particle" style="width: 40px; height: 40px; top: 30%; left: 80%; animation-delay: 6s; --x-offset: -30px; --y-offset: 100px;"></div>
+        <div class="splash-particle" style="width: 25px; height: 25px; top: 50%; left: 5%; animation-delay: 9s; --x-offset: 90px; --y-offset: -60px;"></div>
+
+        <!-- Main Splash Content -->
+        <div class="relative z-10 flex flex-col items-center">
+            <h1 class="text-7xl font-oswald font-bold bg-gradient-to-r from-purple-600 to-blue-500 text-transparent bg-clip-text mb-8 animate-pulse splash-title-enter">Rypd</h1>
+            <button id="continue-app-btn" class="bg-gradient-to-r from-purple-600 to-blue-500 text-white py-3 px-8 rounded-xl font-semibold text-lg shadow-lg hover:from-purple-700 hover:to-blue-600 transition-all duration-300 transform hover:scale-105 splash-button-enter">
+                Continue to App
+            </button>
+        </div>
+    </div>
+
+    <!-- Message Display Area: For temporary notifications -->
+    <div id="message-display" class="fixed top-4 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg z-50 opacity-0 transition-opacity duration-300">
+        <!-- Messages will appear here -->
+    </div>
+
+    <!-- Main App Content Area: Dynamically loaded page content -->
+    <div id="content-area" class="w-full max-w-2xl bg-[#1A1A1A] text-[#F0F0F0] shadow-md rounded-xl p-4 mb-20 flex-grow hidden">
+        <!-- Page content will be dynamically loaded here by JavaScript -->
+        <h2 class="text-2xl font-semibold text-[#F0F0F0] mb-6 text-center">Loading...</h2>
+    </div>
+
+    <!-- Navigation Bar: Fixed at the bottom for easy access -->
+    <nav id="nav-bar" class="fixed bottom-0 left-0 right-0 w-full bg-[#1A1A1A] shadow-lg rounded-t-xl p-4 flex justify-around items-center z-40 hidden">
+        <!-- Feed Button -->
+        <button id="nav-feed" class="flex flex-col items-center px-4 py-2 rounded-md font-medium text-[#A0A0A0] hover:bg-black transition-colors duration-200">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+            <span class="text-xs mt-1">Feed</span>
+        </button>
+        <!-- Create Post Button -->
+        <button id="nav-create" class="flex flex-col items-center px-4 py-2 rounded-md font-medium text-[#A0A0A0] hover:bg-black transition-colors duration-200">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/>
+            </svg>
+            <span class="text-xs mt-1">Create</span>
+        </button>
+        <!-- Profile Button -->
+        <button id="nav-profile" class="flex flex-col items-center px-4 py-2 rounded-md font-medium text-[#A0A0A0] hover:bg-black transition-colors duration-200">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+            </svg>
+            <span class="text-xs mt-1">Profile</span>
+        </button>
+        <!-- Rypd AI Button -->
+        <button id="nav-ai" class="flex flex-col items-center px-4 py-2 rounded-md font-medium text-[#A0A0A0] hover:bg-black transition-colors duration-200">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 8V4H8"/><path d="M22 17a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3"/><path d="M6 15h2"/><path d="M10 15h2"/><path d="M14 15h2"/>
+            </svg>
+            <span class="text-xs mt-1">Rypd AI</span>
+        </button>
+        <!-- Challenges Button -->
+        <button id="nav-challenges" class="flex flex-col items-center px-4 py-2 rounded-md font-medium text-[#A0A0A0] hover:bg-black transition-colors duration-200">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+            <span class="text-xs mt-1">Challenges</span>
+        </button>
+        <!-- Messages Button -->
+        <button id="nav-messages" class="flex flex-col items-center px-4 py-2 rounded-md font-medium text-[#A0A0A0] hover:bg-black transition-colors duration-200">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+            <span class="text-xs mt-1">Messages</span>
+        </button>
+    </nav>
+
+    <!-- Firebase SDK Imports (type="module" is crucial for ES6 imports) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, doc, updateDoc, arrayUnion, arrayRemove, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global variables for Firebase instances (declared in window scope for accessibility)
+        window.app = null;
+        window.db = null;
+        window.auth = null;
+        window.userId = null;
+        window.isAuthReady = false;
+
+        // --- DEMO DATA (Hardcoded for demonstration purposes) ---
+        // Function to generate random avatar colors
+        const getRandomAvatarColor = () => {
+            const colors = ['#FF00FF', '#00FFFF', '#32CD32', '#FFD700', '#FF4500']; // Magenta, Cyan, LimeGreen, Gold, OrangeRed
+            return colors[Math.floor(Math.random() * colors.length)];
+        };
+
+        let demoPosts = [
+            {
+                id: 'post1',
+                userId: 'fitness_fanatic_789',
+                content: "Crushed my leg day PR! 🏋️‍♀️ Feeling stronger every session. Consistency is key!",
+                imageUrl: "https://placehold.co/600x400/00FFFF/000000?text=Leg+Day+PR", // Cyan placeholder
+                timestamp: new Date(Date.now() - 7200000), // 2 hours ago
+                likes: ['demo_user_123'], // Array of user IDs who liked (demo only)
+                comments: [
+                    { userId: 'gym_buddy_007', text: 'Awesome work! What was your PR on?' },
+                    { userId: 'strength_seeker', text: 'Inspiring! Keep it up!' }
+                ],
+                postType: 'Workout Progress',
+                mood: 'Pumped',
+                avatarColor: getRandomAvatarColor()
+            },
+            {
+                id: 'post2',
+                userId: 'healthy_eats_gal',
+                content: "Meal prep Sunday success!  🥕 Getting those greens in. Fueling my body right.",
+                imageUrl: "https://placehold.co/600x400/32CD32/FFFFFF?text=Meal+Prep", // Lime Green placeholder
+                timestamp: new Date(Date.now() - 86400000), // 1 day ago
+                likes: [],
+                comments: [
+                    { userId: 'nutrition_nerd', text: 'Looks delicious! What recipe did you use?' }
+                ],
+                postType: 'Nutrition Update',
+                mood: 'Achieved',
+                avatarColor: getRandomAvatarColor()
+            },
+            {
+                id: 'post3',
+                userId: 'cardio_queen_111',
+                content: "Just finished a challenging 10k run! 🏃‍♀️💨 Feeling invigorated. Who else loves morning cardio?",
+                imageUrl: "",
+                timestamp: new Date(Date.now() - 172800000), // 2 days ago
+                likes: ['demo_user_123', 'gym_buddy_007'],
+                comments: [],
+                postType: 'General Update',
+                mood: 'Pumped',
+                avatarColor: getRandomAvatarColor()
+            }
+        ];
+
+        let demoUserProfile = {
+            userId: 'loading...', // Will be updated by Firebase auth
+            profilePic: 'https://placehold.co/100x100/32CD32/FFFFFF?text=User', // Lime Green placeholder
+            bio: 'Fitness enthusiast | On a journey to strength and health!',
+            goals: 'Gain 10lbs muscle, run a 5k',
+            currentWeight: '75 kg',
+            height: '175 cm',
+            badges: [
+                { name: 'First Workout', icon: '<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-[#00FFFF]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 17H2a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h20a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2z"/><path d="M7 10v4"/><path d="M12 10v4"/><path d="M17 10v4"/></svg>' },
+                { name: '7-Day Streak', icon: '<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-[#32CD32]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H7l5 5-5 5h10l-5 5"/><path d="m12 19 5-5-5-5-5 5 5 5z"/></svg>' },
+                { name: 'PR Breaker', icon: '<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-[#FF00FF]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M12 18V12m0 0 4 4m-4-4-4 4"/></svg>' }
+            ]
+        };
+
+        let demoWeightLogs = [
+            { date: 'July 20, 2025', weight: '74.5 kg' },
+            { date: 'July 13, 2025', weight: '74 kg' },
+            { date: 'July 06, 2025', weight: '73.8 kg' }
+        ];
+
+        let demoWorkouts = [
+            {
+                id: 'workout1',
+                name: 'Full Body Blast',
+                exercises: [
+                    { name: 'Barbell Squats', sets: '3', reps: '8-10', notes: 'Focus on depth' },
+                    { name: 'Bench Press', sets: '3', reps: '8-10', notes: 'Control negative' },
+                    { name: 'Bent-Over Rows', sets: '3', reps: '8-10', notes: 'Squeeze shoulder blades' },
+                    { name: 'Overhead Press', sets: '3', reps: '8-10', notes: 'Full lockout' },
+                    { name: 'Plank', sets: '3', reps: '60s hold', notes: 'Keep core tight' }
+                ]
+            },
+            {
+                id: 'workout2',
+                name: 'Leg Day Domination',
+                exercises: [
+                    { name: 'Deadlifts', sets: '3', reps: '5-8', notes: 'Hinge at hips' },
+                    { name: 'Leg Press', sets: '3', reps: '10-12', notes: 'Push through heels' },
+                    { name: 'Leg Curls', sets: '3', reps: '12-15', notes: 'Slow and controlled' },
+                    { name: 'Calf Raises', sets: '4', reps: '15-20', notes: 'Full stretch and squeeze' }
+                ]
+            }
+        ];
+
+        let demoChallenges = [
+            {
+                id: 'challenge1',
+                title: '30-Day Squat Challenge',
+                description: 'Complete 100 squats daily for 30 days!',
+                participants: 500
+            },
+            {
+                id: 'challenge2',
+                title: 'Weekly Step Goal (100k Steps)',
+                description: 'Hit 100,000 steps in a single week!',
+                participants: 1200
+            },
+            {
+                id: 'challenge3',
+                title: 'Plank Hold Master',
+                description: 'Improve your plank hold time by 30 seconds over 2 weeks!',
+                participants: 300
+            }
+        ];
+
+        let demoMessages = [
+            { from: 'gym_buddy_007', text: 'Hey, great progress on your PR! When are you hitting the gym next?' },
+            { from: 'You', text: 'Thanks! Planning for Tuesday evening. Want to join?' },
+            { from: 'fitness_fanatic_789', text: 'Just saw your meal prep post, looks amazing! Need to try that recipe.' }
+        ];
+
+        let demoFoodLog = [
+            { name: 'Chicken Breast (150g)', calories: 240, protein: 45, carbs: 0, fats: 6 },
+            { name: 'Brown Rice (1 cup cooked)', calories: 215, protein: 5, carbs: 45, fats: 2 },
+            { name: 'Broccoli (100g)', calories: 34, protein: 2, carbs: 7, fats: 0 },
+            { name: 'Protein Shake', calories: 120, protein: 25, carbs: 4, fats: 1 }
+        ];
+
+        // New: Demo chat data for Instagram/WhatsApp style messages
+        let demoChats = [
+            {
+                id: 'chat1',
+                name: 'Gym Buddy',
+                avatar: 'https://placehold.co/50x50/00FFFF/000000?text=GB',
+                lastMessage: 'Awesome PR! See you Tuesday?',
+                messages: [
+                    { sender: 'Gym Buddy', text: 'Hey, great progress on your PR! When are you hitting the gym next?', time: '10:30 AM' },
+                    { sender: 'You', text: 'Thanks! Planning for Tuesday evening. Want to join?', time: '10:35 AM' },
+                    { sender: 'Gym Buddy', text: 'Definitely! What time works for you?', time: '10:40 AM' },
+                    { sender: 'You', text: 'Around 6 PM?', time: '10:45 AM' }
+                ]
+            },
+            {
+                id: 'chat2',
+                name: 'Nutrition Tips',
+                avatar: 'https://placehold.co/50x50/32CD32/FFFFFF?text=NT',
+                lastMessage: 'Your meal prep looks great!',
+                messages: [
+                    { sender: 'Nutrition Tips', text: 'Your meal prep looks great! What recipe did you use for the chicken?', time: 'Yesterday' },
+                    { sender: 'You', text: 'It\'s a simple lemon-herb marinade! Super easy.', time: 'Yesterday' }
+                ]
+            },
+            {
+                id: 'chat3',
+                name: 'Challenge Crew',
+                avatar: 'https://placehold.co/50x50/FF00FF/FFFFFF?text=CC',
+                lastMessage: 'Did anyone hit their squat goal today?',
+                messages: [
+                    { sender: 'Challenge Crew', text: 'Morning everyone! Did anyone hit their squat goal today?', time: '8:00 AM' },
+                    { sender: 'You', text: 'I did! Feeling the burn!', time: '8:05 AM' },
+                    { sender: 'Challenge Crew', text: 'Awesome! Keep pushing!', time: '8:10 AM' }
+                ]
+            },
+            { // New: Rypd AI chat contact
+                id: 'chat_ai',
+                name: 'Rypd AI',
+                avatar: 'https://placehold.co/50x50/8A2BE2/FFFFFF?text=AI', // Purple avatar for AI
+                lastMessage: 'How can I assist you today?',
+                messages: [
+                    { sender: 'Rypd AI', text: 'Hello! I am Rypd AI. How can I assist you with your fitness journey today?', time: 'Just now' }
+                ],
+                isAI: true // Flag to identify AI chat
+            }
+        ];
+
+
+        // UI Element References
+        const splashScreen = document.getElementById('splash-screen');
+        const continueAppBtn = document.getElementById('continue-app-btn');
+        const contentArea = document.getElementById('content-area');
+        const navBar = document.getElementById('nav-bar');
+        const navButtons = {
+            feed: document.getElementById('nav-feed'),
+            create: document.getElementById('nav-create'),
+            profile: document.getElementById('nav-profile'),
+            ai: document.getElementById('nav-ai'),
+            challenges: document.getElementById('nav-challenges'),
+            messages: document.getElementById('nav-messages')
+        };
+        const messageDisplay = document.getElementById('message-display');
+
+        let currentPage = 'feed'; // Initial page
+
+        // Function to display temporary messages
+        function showMessage(msg, duration = 3000) {
+            messageDisplay.textContent = msg;
+            messageDisplay.classList.remove('opacity-0', 'fade-out');
+            messageDisplay.classList.add('opacity-100', 'fade-in');
+
+            setTimeout(() => {
+                messageDisplay.classList.remove('opacity-100', 'fade-in');
+                messageDisplay.classList.add('opacity-0', 'fade-out');
+            }, duration);
+        }
+
+        // Function to render different pages with transitions
+        function showPage(pageName) {
+            // Only apply exit animation if content is currently visible
+            if (!contentArea.classList.contains('hidden') && contentArea.innerHTML !== '') {
+                contentArea.classList.add('page-exit-animation');
+                navBar.classList.add('page-exit-animation'); // Animate nav bar too
+            }
+
+            setTimeout(() => {
+                currentPage = pageName;
+                contentArea.innerHTML = ''; // Clear current content
+
+                // Remove exit animations and prepare for entry
+                contentArea.classList.remove('page-exit-animation', 'app-enter-animation');
+                navBar.classList.remove('page-exit-animation', 'app-enter-animation');
+                contentArea.classList.add('hidden'); // Hide temporarily during content swap
+                navBar.classList.add('hidden');
+
+                // Update active navigation button
+                Object.keys(navButtons).forEach(key => {
+                    if (key === pageName) {
+                        navButtons[key].classList.add('bg-black', 'text-transparent', 'bg-clip-text', 'bg-gradient-to-r', 'from-purple-600', 'to-blue-500', 'shadow-lg'); // Active: Dark background, Gradient text
+                        navButtons[key].classList.remove('text-[#A0A0A0]', 'hover:bg-black'); // Inactive: Light gray text, dark hover
+                    } else {
+                        navButtons[key].classList.remove('bg-black', 'text-transparent', 'bg-clip-text', 'bg-gradient-to-r', 'from-purple-600', 'to-blue-500', 'shadow-lg');
+                        navButtons[key].classList.add('text-[#A0A0A0]', 'hover:bg-black');
+                    }
+                });
+
+                // Render new page content
+                switch (pageName) {
+                    case 'feed':
+                        renderFeedPage();
+                        break;
+                    case 'create':
+                        renderCreatePostPage();
+                        break;
+                    case 'profile':
+                        renderProfilePage();
+                        break;
+                    case 'ai':
+                        // Direct navigation to Rypd AI chat
+                        renderConversationPage('chat_ai');
+                        break;
+                    case 'challenges':
+                        renderChallengesPage();
+                        break;
+                    case 'messages':
+                        renderMessagesPage(); // Show chat list
+                        break;
+                    default:
+                        renderFeedPage();
+                }
+
+                // Apply entry animation
+                contentArea.classList.remove('hidden');
+                navBar.classList.remove('hidden');
+                contentArea.classList.add('page-enter-animation');
+                navBar.classList.add('page-enter-animation');
+
+            }, 300); // This timeout should match the page-exit-animation duration
+        }
+
+
+        // Helper to format timestamp
+        function formatTimestamp(date) {
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMinutes = Math.round(diffMs / (1000 * 60));
+            const diffHours = Math.round(diffMs / (1000 * 60 * 60));
+            const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+
+            if (diffMinutes < 1) return 'Just now';
+            if (diffMinutes < 60) return `${diffMinutes} minutes ago`;
+            if (diffHours < 24) return `${diffHours} hours ago`;
+            if (diffDays < 7) return `${diffDays} days ago`;
+            return date.toLocaleDateString();
+        }
+
+        // --- Page Rendering Functions ---
+
+        function renderFeedPage() {
+            contentArea.innerHTML = `
+                <h2 class="text-2xl font-oswald font-semibold text-[#F0F0F0] mb-6 text-center">Your Feed</h2>
+                <div class="bg-[#1A1A1A] rounded-xl shadow-md p-4 mb-6">
+                    <h3 class="text-xl font-oswald font-semibold text-[#F0F0F0] mb-3">Trending Highlights 🔥</h3>
+                    <div class="flex items-center space-x-3 overflow-x-auto pb-2">
+                        <div class="flex-shrink-0 text-center">
+                            <div class="w-16 h-16 rounded-full bg-gradient-to-r from-purple-500 to-red-500 flex items-center justify-center text-white text-xs font-bold mb-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                            </div>
+                            <p class="text-xs text-[#A0A0A0]">#PRs</p>
+                        </div>
+                        <div class="flex-shrink-0 text-center">
+                            <div class="w-16 h-16 rounded-full bg-gradient-to-r from-green-500 to-blue-500 flex items-center justify-center text-white text-xs font-bold mb-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H7l5 5-5 5h10l-5 5"/><path d="m12 19 5-5-5-5-5 5 5 5z"/></svg>
+                            </div>
+                            <p class="text-xs text-[#A0A0A0]">#Streaks</p>
+                        </div>
+                        <div class="flex-shrink-0 text-center">
+                            <div class="w-16 h-16 rounded-full bg-gradient-to-r from-yellow-500 to-orange-500 flex items-center justify-center text-white text-xs font-bold mb-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+                            </div>
+                            <p class="text-xs text-[#A0A0A0]">#Motivation</p>
+                        </div>
+                        <div class="flex-shrink-0 text-center">
+                            <div class="w-16 h-16 rounded-full bg-gradient-to-r from-cyan-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold mb-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                            </div>
+                            <p class="text-xs text-[#A0A0A0]">#Community</p>
+                        </div>
+                    </div>
+                </div>
+                <div id="posts-container" class="space-y-6"></div>
+            `;
+            const postsContainer = document.getElementById('posts-container');
+
+            demoPosts.forEach(post => {
+                const postElement = document.createElement('div');
+                postElement.className = 'bg-[#1A1A1A] rounded-xl shadow-md p-6 text-[#F0F0F0]'; // Darker card background, light text
+                postElement.innerHTML = `
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg mr-3" style="background-color: ${post.avatarColor};">
+                                ${post.userId.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                                <p class="font-semibold text-[#F0F0F0]">${post.userId}</p>
+                                <p class="text-sm text-[#A0A0A0]">${formatTimestamp(post.timestamp)}</p>
+                            </div>
+                        </div>
+                        <button class="bg-gradient-to-r from-purple-600 to-blue-500 text-white text-xs px-3 py-1 rounded-full hover:from-purple-700 hover:to-blue-600 transition-colors duration-200 follow-button" data-user-id="${post.userId}">Follow</button>
+                    </div>
+                    <p class="text-[#F0F0F0] mb-4">${post.content}</p>
+                    ${post.imageUrl ? `<img src="${post.imageUrl}" alt="Progress Image" class="w-full rounded-lg mb-4 object-cover max-h-80">` : ''}
+                    <div class="flex justify-between items-center text-sm text-[#A0A0A0] mb-4">
+                        <span class="px-2 py-1 bg-black rounded-md">${post.postType}</span>
+                        <span class="px-2 py-1 bg-black rounded-md">Mood: ${post.mood}</span>
+                    </div>
+                    <div class="flex items-center justify-between text-[#A0A0A0]">
+                        <button class="flex items-center space-x-1 px-3 py-1 rounded-full hover:bg-black transition-colors duration-200 like-button" data-post-id="${post.id}">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ${post.likes.includes(window.userId) ? 'text-red-500 fill-current' : ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
+                            </svg>
+                            <span class="like-count">${post.likes.length}</span>
+                        </button>
+                        <button class="flex items-center space-x-1 px-3 py-1 rounded-full hover:bg-black transition-colors duration-200 comment-button" data-post-id="${post.id}">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 11.5a2.5 2.5 0 0 0-5 0v2.5c0 .6-.4 1-1 1H9c-.6 0-1-.4-1-1v-2.5a2.5 2.5 0 0 0-5 0v2.5c0 .6-.4 1-1 1H1c-.6 0-1-.4-1-1V9a2 2 0 0 1 2-2h3c.6 0 1-.4 1-1V3.5A2.5 2.5 0 0 1 10.5 1h3A2.5 2.5 0 0 1 16 3.5V6c0 .6.4 1 1 1h3a2 2 0 0 1 2 2v2.5c0 .6-.4 1-1 1h-1c-.6 0-1-.4-1-1V11.5Z"/>
+                            </svg>
+                            <span>${post.comments.length}</span>
+                        </button>
+                    </div>
+                    <div class="comments-section mt-4 hidden">
+                        <div class="space-y-2 mb-4">
+                            ${post.comments.map(comment => `
+                                <div class="bg-black p-3 rounded-lg text-sm">
+                                    <span class="font-semibold text-[#F0F0F0]">${comment.userId}:</span> ${comment.text}
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div class="flex">
+                            <input type="text" placeholder="Add a comment..." class="flex-grow p-2 border border-[#4A4A6A] rounded-l-lg focus:outline-none focus:ring-2 focus:ring-[#00FFFF] bg-black text-[#F0F0F0]">
+                            <button class="bg-gradient-to-r from-purple-600 to-blue-500 text-white px-4 py-2 rounded-r-lg hover:from-purple-700 hover:to-blue-600 transition-colors duration-200 add-comment-btn">Post</button>
+                        </div>
+                    </div>
+                `;
+                postsContainer.appendChild(postElement);
+            });
+
+            // Add event listeners for like and comment buttons
+            postsContainer.querySelectorAll('.like-button').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    const postId = event.currentTarget.dataset.postId;
+                    const post = demoPosts.find(p => p.id === postId);
+                    if (!post) return;
+
+                    const likeCountSpan = event.currentTarget.querySelector('.like-count');
+                    const heartIcon = event.currentTarget.querySelector('svg');
+
+                    if (post.likes.includes(window.userId)) {
+                        post.likes = post.likes.filter(id => id !== window.userId);
+                        heartIcon.classList.remove('text-red-500', 'fill-current');
+                        showMessage("Post unliked! (Demo only)");
+                    } else {
+                        post.likes.push(window.userId);
+                        heartIcon.classList.add('text-red-500', 'fill-current');
+                        event.currentTarget.classList.add('pulse-animation');
+                        event.currentTarget.addEventListener('animationend', () => {
+                            event.currentTarget.classList.remove('pulse-animation');
+                        }, { once: true });
+                        showMessage("Post liked! (Demo only)");
+                    }
+                    likeCountSpan.textContent = post.likes.length;
+                });
+            });
+
+            postsContainer.querySelectorAll('.comment-button').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    // FIX: Escaped the square brackets in the Tailwind class selector
+                    // This selector targets the immediate parent with the correct background class
+                    const commentsSection = event.currentTarget.closest('.bg-\\[#1A1A1A\\]').querySelector('.comments-section');
+                    commentsSection.classList.toggle('hidden');
+                });
+            });
+
+            postsContainer.querySelectorAll('.add-comment-btn').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    const input = event.currentTarget.previousElementSibling;
+                    if (input.value.trim()) {
+                        showMessage("Comment added! (Demo only, not saved)");
+                        input.value = ''; // Clear input
+                    }
+                });
+            });
+
+            postsContainer.querySelectorAll('.follow-button').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    const userIdToFollow = event.currentTarget.dataset.userId;
+                    showMessage(`Now following ${userIdToFollow}! (Demo only)`);
+                    event.currentTarget.textContent = 'Following';
+                    event.currentTarget.disabled = true;
+                    event.currentTarget.classList.remove('bg-gradient-to-r', 'from-purple-600', 'to-blue-500', 'hover:from-purple-700', 'hover:to-blue-600');
+                    event.currentTarget.classList.add('bg-gray-600', 'cursor-not-allowed');
+                });
+            });
+        }
+
+        function renderCreatePostPage() {
+            contentArea.innerHTML = `
+                <h2 class="text-2xl font-oswald font-semibold text-[#F0F0F0] mb-6 text-center">Create New Post</h2>
+                <div class="bg-[#1A1A1A] rounded-xl shadow-md p-6 text-[#F0F0F0]">
+                    <div class="mb-4">
+                        <label for="new-post-content" class="block text-[#F0F0F0] text-sm font-bold mb-2">What's your progress today?</label>
+                        <textarea id="new-post-content" class="w-full p-3 border border-[#4A4A6A] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00FFFF] bg-black text-[#F0F0F0] h-28 resize-y" placeholder="Share your workout, achievement, or thoughts..."></textarea>
+                    </div>
+                    <div class="mb-4">
+                        <label for="new-post-image-url" class="block text-[#F0F0F0] text-sm font-bold mb-2">Image URL (Optional)</label>
+                        <input type="text" id="new-post-image-url" class="w-full p-3 border border-[#4A4A6A] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00FFFF] bg-black text-[#F0F0F0]" placeholder="e.g., https://example.com/your-progress.jpg">
+                    </div>
+                    <div class="mb-4">
+                        <label for="post-type-select" class="block text-[#F0F0F0] text-sm font-bold mb-2">Post Type</label>
+                        <select id="post-type-select" class="w-full p-3 border border-[#4A4A6A] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00FFFF] bg-black text-[#F0F0F0]">
+                            <option value="General Update">General Update</option>
+                            <option value="Workout Progress">Workout Progress</option>
+                            <option value="Nutrition Update">Nutrition Update</option>
+                            <option value="Achievement">Achievement</option>
+                        </select>
+                    </div>
+                    <div class="mb-6">
+                        <label for="mood-select" class="block text-[#F0F0F0] text-sm font-bold mb-2">How are you feeling?</label>
+                        <select id="mood-select" class="w-full p-3 border border-[#4A4A6A] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00FFFF] bg-black text-[#F0F0F0]">
+                            <option value="Pumped">Pumped 💪</option>
+                            <option value="Achieved">Achieved ✨</option>
+                            <option value="Tired">Tired 😴</option>
+                            <option value="Motivated">Motivated 🔥</option>
+                            <option value="Normal">Normal 😊</option>
+                        </select>
+                    </div>
+                    <button id="share-post-btn" class="w-full bg-gradient-to-r from-purple-600 to-blue-500 text-white py-3 rounded-lg font-semibold text-lg shadow-md hover:from-purple-700 hover:to-blue-600 transition-colors duration-300">Share Progress</button>
+                </div>
+            `;
+
+            document.getElementById('share-post-btn').addEventListener('click', () => {
+                const content = document.getElementById('new-post-content').value;
+                const imageUrl = document.getElementById('new-post-image-url').value;
+                const postType = document.getElementById('post-type-select').value;
+                const mood = document.getElementById('mood-select').value;
+
+                if (content.trim() || imageUrl.trim()) {
+                    showMessage("Post shared! (Demo only, not saved to database)");
+                    // Simulate adding to local array for immediate feedback, but it won't persist
+                    demoPosts.unshift({
+                        id: `post${Date.now()}`,
+                        userId: window.userId || 'demo_user',
+                        content: content,
+                        imageUrl: imageUrl,
+                        timestamp: new Date(),
+                        likes: [],
+                        comments: [],
+                        postType: postType,
+                        mood: mood,
+                        avatarColor: getRandomAvatarColor() // Assign a random color to new post's avatar
+                    });
+                    document.getElementById('new-post-content').value = '';
+                    document.getElementById('new-post-image-url').value = '';
+                    document.getElementById('post-type-select').value = 'General Update';
+                    document.getElementById('mood-select').value = 'Pumped';
+                    showPage('feed'); // Go back to feed after "posting"
+                } else {
+                    showMessage("Please add some content or an image URL.");
+                }
+            });
+        }
+
+        function renderProfilePage() {
+            // Function to calculate total macros for demoFoodLog
+            const calculateTotals = () => {
+                let totalCalories = 0;
+                let totalProtein = 0;
+                let totalCarbs = 0;
+                let totalFats = 0;
+                demoFoodLog.forEach(food => {
+                    totalCalories += food.calories;
+                    totalProtein += food.protein;
+                    totalCarbs += food.carbs;
+                    totalFats += food.fats;
+                });
+                return { totalCalories, totalProtein, totalCarbs, totalFats };
+            };
+
+            const { totalCalories, totalProtein, totalCarbs, totalFats } = calculateTotals();
+
+            contentArea.innerHTML = `
+                <h2 class="text-2xl font-oswald font-semibold text-[#F0F0F0] mb-6 text-center">Your Profile</h2>
+                <div class="bg-[#1A1A1A] rounded-xl shadow-md p-6 mb-6 text-center text-[#F0F0F0]">
+                    <img src="${demoUserProfile.profilePic}" alt="Profile Picture" class="w-24 h-24 rounded-full mx-auto mb-4 object-cover border-4 border-[#32CD32]">
+                    <p class="text-xl font-bold text-[#F0F0F0] mb-2">${window.userId || 'Loading User ID...'}</p>
+                    <p class="text-[#A0A0A0] mb-4">${demoUserProfile.bio}</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-left">
+                        <div class="bg-black p-4 rounded-lg">
+                            <p class="text-sm font-semibold text-[#A0A0A0]">Goals</p>
+                            <p class="text-[#F0F0F0]">${demoUserProfile.goals}</p>
+                        </div>
+                        <div class="bg-black p-4 rounded-lg">
+                            <p class="text-sm font-semibold text-[#A0A0A0]">Current Weight</p>
+                            <p class="text-[#F0F0F0]">${demoUserProfile.currentWeight}</p>
+                        </div>
+                        <div class="bg-black p-4 rounded-lg">
+                            <p class="text-sm font-semibold text-[#A0A0A0]">Height</p>
+                            <p class="text-[#F0F0F0]">${demoUserProfile.height}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-[#1A1A1A] rounded-xl shadow-md p-6 mb-6 text-[#F0F0F0]">
+                    <h3 class="text-xl font-oswald font-semibold text-[#F0F0F0] mb-4">Weight Log</h3>
+                    <div id="weight-logs-container" class="space-y-2 mb-4">
+                        ${demoWeightLogs.map(log => `
+                            <div class="flex justify-between items-center bg-black p-3 rounded-lg text-[#F0F0F0]">
+                                <span>${log.date}</span>
+                                <span class="font-medium">${log.weight}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="flex gap-2">
+                        <input type="number" id="new-weight-input" class="flex-grow p-3 border border-[#4A4A6A] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#32CD32] bg-black text-[#F0F0F0]" placeholder="Enter new weight (kg)">
+                        <button id="log-weight-btn" class="bg-[#32CD32] text-white px-5 py-3 rounded-lg font-semibold hover:bg-[#00FF00] transition-colors duration-300">Log Weight</button>
+                    </div>
+                </div>
+
+                <div class="bg-[#1A1A1A] rounded-xl shadow-md p-6 mb-6 text-[#F0F0F0]">
+                    <h3 class="text-xl font-oswald font-semibold text-[#F0F0F0] mb-4">Your Badges</h3>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                        ${demoUserProfile.badges.map(badge => `
+                            <div class="bg-black p-4 rounded-lg flex flex-col items-center justify-center text-center">
+                                ${badge.icon}
+                                <p class="text-sm font-semibold mt-2 text-[#F0F0F0]">${badge.name}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <div class="bg-[#1A1A1A] rounded-xl shadow-md p-6 mb-6 text-[#F0F0F0]">
+                    <h3 class="text-xl font-oswald font-semibold text-[#F0F0F0] mb-4">Progress Chart (Demo)</h3>
+                    <div class="bg-black h-48 rounded-lg flex items-center justify-center text-[#A0A0A0] text-sm">
+                        [Placeholder for future interactive chart]
+                    </div>
+                </div>
+
+                <div class="bg-[#1A1A1A] rounded-xl shadow-md p-6 mb-6 text-[#F0F0F0]">
+                    <h3 class="text-xl font-oswald font-semibold text-[#F0F0F0] mb-4">Log a Workout (Demo)</h3>
+                    <select id="workout-select" class="w-full p-3 border border-[#4A4A6A] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00FFFF] bg-black text-[#F0F0F0] mb-4">
+                        <option value="">Select a workout plan...</option>
+                        ${demoWorkouts.map(workout => `<option value="${workout.id}">${workout.name}</option>`).join('')}
+                    </select>
+                    <div id="selected-workout-details" class="space-y-2 mb-4 p-3 bg-black rounded-lg hidden">
+                        <!-- Workout exercises will be displayed here -->
+                    </div>
+                    <button id="log-workout-btn" class="w-full bg-gradient-to-r from-purple-600 to-blue-500 text-white py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-blue-600 transition-colors duration-300">Log Selected Workout</button>
+                </div>
+
+                <div class="bg-[#1A1A1A] rounded-xl shadow-md p-6 text-[#F0F0F0]">
+                    <h3 class="text-xl font-oswald font-semibold text-[#F0F0F0] mb-4">Daily Food Log (Demo)</h3>
+                    <div id="food-log-entries" class="space-y-2 mb-4">
+                        ${demoFoodLog.map(food => `
+                            <div class="bg-black p-3 rounded-lg flex justify-between items-center">
+                                <div>
+                                    <p class="font-semibold text-[#F0F0F0]">${food.name}</p>
+                                    <p class="text-xs text-[#A0A0A0]">${food.calories} kcal | P:${food.protein}g C:${food.carbs}g F:${food.fats}g</p>
+                                </div>
+                                <button class="text-red-500 hover:text-red-700 delete-food-btn" data-food-index="${demoFoodLog.indexOf(food)}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 mb-4 text-sm">
+                        <div class="bg-black p-3 rounded-lg text-center">
+                            <p class="text-[#A0A0A0]">Calories</p>
+                            <p class="font-bold text-[#00FFFF]">${totalCalories} kcal</p>
+                        </div>
+                        <div class="bg-black p-3 rounded-lg text-center">
+                            <p class="text-[#A0A0A0]">Protein</p>
+                            <p class="font-bold text-[#00FFFF]">${totalProtein} g</p>
+                        </div>
+                        <div class="bg-black p-3 rounded-lg text-center">
+                            <p class="text-[#A0A0A0]">Carbs</p>
+                            <p class="font-bold text-[#00FFFF]">${totalCarbs} g</p>
+                        </div>
+                        <div class="bg-black p-3 rounded-lg text-center">
+                            <p class="text-[#A0A0A0]">Fats</p>
+                            <p class="font-bold text-[#00FFFF]">${totalFats} g</p>
+                        </div>
+                    </div>
+                    <div class="space-y-2 mb-4">
+                        <input type="text" id="food-name-input" class="w-full p-3 border border-[#4A4A6A] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00FFFF] bg-black text-[#F0F0F0]" placeholder="Food Name">
+                        <input type="number" id="food-calories-input" class="w-full p-3 border border-[#4A4A6A] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00FFFF] bg-black text-[#F0F0F0]" placeholder="Calories (kcal)">
+                        <input type="number" id="food-protein-input" class="w-full p-3 border border-[#4A4A6A] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00FFFF] bg-black text-[#F0F0F0]" placeholder="Protein (g)">
+                        <input type="number" id="food-carbs-input" class="w-full p-3 border border-[#4A4A6A] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00FFFF] bg-black text-[#F0F0F0]" placeholder="Carbs (g)">
+                        <input type="number" id="food-fats-input" class="w-full p-3 border border-[#4A4A6A] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00FFFF] bg-black text-[#F0F0F0]" placeholder="Fats (g)">
+                    </div>
+                    <button id="add-food-btn" class="w-full bg-gradient-to-r from-purple-600 to-blue-500 text-white py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-blue-600 transition-colors duration-300">Add Food</button>
+                </div>
+            `;
+
+            document.getElementById('log-weight-btn').addEventListener('click', () => {
+                const newWeightInput = document.getElementById('new-weight-input');
+                const newWeight = newWeightInput.value.trim();
+                if (newWeight && !isNaN(newWeight)) {
+                    const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                    const newLog = { date: today, weight: `${newWeight} kg` };
+                    demoWeightLogs.unshift(newLog); // Add to local demo data
+                    showMessage("Weight logged! (Demo only, not saved)");
+                    newWeightInput.value = '';
+                    renderProfilePage(); // Re-render to show updated log
+                } else {
+                    showMessage("Please enter a valid weight.");
+                }
+            });
+
+            const workoutSelect = document.getElementById('workout-select');
+            const selectedWorkoutDetails = document.getElementById('selected-workout-details');
+            const logWorkoutBtn = document.getElementById('log-workout-btn');
+
+            workoutSelect.addEventListener('change', (event) => {
+                const selectedWorkoutId = event.target.value;
+                const workout = demoWorkouts.find(w => w.id === selectedWorkoutId);
+                selectedWorkoutDetails.innerHTML = '';
+                if (workout) {
+                    selectedWorkoutDetails.classList.remove('hidden');
+                    workout.exercises.forEach(exercise => {
+                        const exerciseElement = document.createElement('p');
+                        exerciseElement.className = 'text-sm text-[#F0F0F0]';
+                        exerciseElement.innerHTML = `<span class="font-semibold">${exercise.name}:</span> ${exercise.sets} sets of ${exercise.reps} compounded with ${exercise.notes}`;
+                        selectedWorkoutDetails.appendChild(exerciseElement);
+                    });
+                } else {
+                    selectedWorkoutDetails.classList.add('hidden');
+                }
+            });
+
+            logWorkoutBtn.addEventListener('click', () => {
+                if (workoutSelect.value) {
+                    const selectedWorkoutName = workoutSelect.options[workoutSelect.selectedIndex].text;
+                    showMessage(`Workout "${selectedWorkoutName}" logged! (Demo only)`);
+                    workoutSelect.value = ""; // Reset select
+                    selectedWorkoutDetails.classList.add('hidden'); // Hide details
+                } else {
+                    showMessage("Please select a workout to log.");
+                }
+            });
+
+            // Diet Logging functionality
+            const addFoodBtn = document.getElementById('add-food-btn');
+            addFoodBtn.addEventListener('click', () => {
+                const name = document.getElementById('food-name-input').value.trim();
+                const calories = parseInt(document.getElementById('food-calories-input').value);
+                const protein = parseInt(document.getElementById('food-protein-input').value);
+                const carbs = parseInt(document.getElementById('food-carbs-input').value);
+                const fats = parseInt(document.getElementById('food-fats-input').value);
+
+                if (name && !isNaN(calories) && !isNaN(protein) && !isNaN(carbs) && !isNaN(fats)) {
+                    demoFoodLog.push({ name, calories, protein, carbs, fats });
+                    showMessage("Food added! (Demo only)");
+                    // Clear inputs
+                    document.getElementById('food-name-input').value = '';
+                    document.getElementById('food-calories-input').value = '';
+                    document.getElementById('food-protein-input').value = '';
+                    document.getElementById('food-carbs-input').value = '';
+                    document.getElementById('food-fats-input').value = '';
+                    renderProfilePage(); // Re-render to update totals and list
+                } else {
+                    showMessage("Please fill all food details correctly.");
+                }
+            });
+
+            // Delete food item functionality
+            document.querySelectorAll('.delete-food-btn').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    const index = parseInt(event.currentTarget.dataset.foodIndex);
+                    if (index >= 0 && index < demoFoodLog.length) {
+                        demoFoodLog.splice(index, 1);
+                        showMessage("Food item deleted! (Demo only)");
+                        renderProfilePage(); // Re-render to update list and totals
+                    }
+                });
+            });
+        }
+
+        function renderAIAssistantPage() {
+            // This function is now effectively a redirect to the Rypd AI chat in messages
+            // It's kept for clarity if the nav button still points here directly
+            renderConversationPage('chat_ai');
+        }
+
+        function renderChallengesPage() {
+            contentArea.innerHTML = `
+                <h2 class="text-2xl font-oswald font-semibold text-[#F0F0F0] mb-6 text-center">Challenges</h2>
+                <div id="challenges-container" class="space-y-6"></div>
+            `;
+            const challengesContainer = document.getElementById('challenges-container');
+
+            demoChallenges.forEach(challenge => {
+                const challengeElement = document.createElement('div');
+                challengeElement.className = 'bg-[#1A1A1A] rounded-xl shadow-md p-6 text-[#F0F0F0]';
+                challengeElement.innerHTML = `
+                    <h3 class="text-xl font-oswald font-semibold text-[#F0F0F0] mb-2">${challenge.title}</h3>
+                    <p class="text-[#F0F0F0] mb-3">${challenge.description}</p>
+                    <div class="flex items-center text-[#A0A0A0] mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                        </svg>
+                        <span>${challenge.participants} Participants</span>
+                    </div>
+                    <button class="w-full bg-[#32CD32] text-white py-2 rounded-lg font-semibold hover:bg-[#00FF00] transition-colors duration-300 join-challenge-btn" data-challenge-id="${challenge.id}">Join Challenge</button>
+                `;
+                challengesContainer.appendChild(challengeElement);
+            });
+
+            challengesContainer.querySelectorAll('.join-challenge-btn').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    const challengeId = event.currentTarget.dataset.challengeId;
+                    const challenge = demoChallenges.find(c => c.id === challengeId);
+                    if (challenge) {
+                        showMessage(`Joined "${challenge.title}"! (Demo only)`);
+                        event.currentTarget.textContent = 'Joined!';
+                        event.currentTarget.disabled = true;
+                        event.currentTarget.classList.remove('bg-[#32CD32]', 'hover:bg-[#00FF00]');
+                        event.currentTarget.classList.add('bg-gray-600', 'cursor-not-allowed'); // Darker gray for disabled
+                    }
+                });
+            });
+        }
+
+        // New: renderMessagesPage (Chat List)
+        function renderMessagesPage() {
+            contentArea.innerHTML = `
+                <h2 class="text-2xl font-oswald font-semibold text-[#F0F0F0] mb-6 text-center">Chats</h2>
+                <div id="chat-list-container" class="space-y-4">
+                    ${demoChats.map(chat => `
+                        <div class="bg-[#1A1A1A] rounded-xl shadow-md p-4 flex items-center space-x-4 cursor-pointer hover:bg-black transition-colors duration-200 chat-item" data-chat-id="${chat.id}">
+                            <img src="${chat.avatar}" alt="${chat.name} Avatar" class="w-12 h-12 rounded-full object-cover border-2 border-purple-500">
+                            <div class="flex-grow">
+                                <p class="font-semibold text-[#F0F0F0]">${chat.name}</p>
+                                <p class="text-sm text-[#A0A0A0] truncate">${chat.lastMessage}</p>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
+            document.querySelectorAll('.chat-item').forEach(item => {
+                item.addEventListener('click', (event) => {
+                    const chatId = event.currentTarget.dataset.chatId;
+                    renderConversationPage(chatId); // Navigate to individual conversation
+                });
+            });
+        }
+
+        // New: renderConversationPage (Individual Chat View)
+        function renderConversationPage(chatId) {
+            const chat = demoChats.find(c => c.id === chatId);
+            if (!chat) {
+                showMessage("Chat not found!");
+                showPage('messages'); // Go back to chat list
+                return;
+            }
+
+            // Determine if this is the AI chat for specific styling/logic
+            const isAIChat = chat.isAI;
+            const chatBgClass = isAIChat ? 'ai-chat-background' : ''; // Apply AI specific background
+
+            contentArea.innerHTML = `
+                <div class="flex items-center mb-6">
+                    <button id="back-to-chats-btn" class="text-[#00FFFF] hover:text-purple-500 transition-colors duration-200 mr-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="m15 18-6-6 6-6"/>
+                        </svg>
+                    </button>
+                    <img src="${chat.avatar}" alt="${chat.name} Avatar" class="w-10 h-10 rounded-full object-cover border-2 border-purple-500 mr-3">
+                    <h2 class="text-2xl font-oswald font-semibold text-[#F0F0F0]">${chat.name}</h2>
+                </div>
+
+                <div class="bg-[#1A1A1A] rounded-xl shadow-md p-4 text-[#F0F0F0] flex flex-col h-[450px] ${chatBgClass}">
+                    <div id="conversation-display" class="flex-grow overflow-y-auto space-y-4 p-2 mb-4 bg-black rounded-lg">
+                        ${chat.messages.map(msg => `
+                            <div class="${msg.sender === 'You' ? 'text-right' : 'text-left'}">
+                                <span class="inline-block px-4 py-2 rounded-lg ${msg.sender === 'You' ? 'bg-gradient-to-r from-purple-600 to-blue-500 text-white' : 'bg-[#4A4A6A] text-[#F0F0F0]'}">
+                                    <span class="font-semibold">${msg.sender === 'You' ? '' : msg.sender + ':'}</span> ${msg.text}
+                                    <span class="block text-xs text-right ${msg.sender === 'You' ? 'text-blue-200' : 'text-[#A0A0A0]'}">${msg.time}</span>
+                                </span>
+                            </div>
+                        `).join('')}
+                        <div id="typing-indicator" class="text-left text-sm text-[#A0A0A0] mt-2 hidden">
+                            <span class="inline-block px-4 py-2 rounded-lg bg-[#4A4A6A]">
+                                Rypd AI is typing<span class="typing-indicator"><span>.</span><span>.</span><span>.</span></span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="flex">
+                        <input type="text" id="new-message-input" placeholder="Type a message..." class="flex-grow p-3 border border-[#4A4A6A] rounded-l-lg focus:outline-none focus:ring-2 focus:ring-[#00FFFF] bg-black text-[#F0F0F0]">
+                        <button id="send-message-btn" class="bg-gradient-to-r from-purple-600 to-blue-500 text-white px-4 py-2 rounded-r-lg font-semibold hover:from-purple-700 hover:to-blue-600 transition-colors duration-300">Send</button>
+                    </div>
+                </div>
+            `;
+
+            // Scroll to bottom of conversation
+            const conversationDisplay = document.getElementById('conversation-display');
+            conversationDisplay.scrollTop = conversationDisplay.scrollHeight;
+
+            document.getElementById('back-to-chats-btn').addEventListener('click', () => {
+                showPage('messages'); // Go back to chat list
+            });
+
+            document.getElementById('send-message-btn').addEventListener('click', async () => {
+                const input = document.getElementById('new-message-input');
+                const typingIndicator = document.getElementById('typing-indicator');
+                const userMessageText = input.value.trim();
+
+                if (!userMessageText) {
+                    showMessage("Message cannot be empty.");
+                    return;
+                }
+
+                // Add user's message to local chat history
+                const newUserMessage = { sender: 'You', text: userMessageText, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
+                chat.messages.push(newUserMessage);
+                input.value = ''; // Clear input immediately
+                updateConversationDisplay(); // Update UI with user's message
+
+                if (isAIChat) {
+                    typingIndicator.classList.remove('hidden'); // Show typing indicator
+                    conversationDisplay.scrollTop = conversationDisplay.scrollHeight; // Scroll to show typing
+
+                    try {
+                        const apiKey = "AIzaSyArciJov5FzUZwLFyC0qqDKns_nhuK0ACA"; // User's provided Gemini API Key
+                        if (apiKey === "YOUR_GEMINI_API_KEY_HERE" || !apiKey) {
+                            showMessage("Gemini API Key is not configured for AI chat.");
+                            return;
+                        }
+
+                        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                        const payload = { contents: [{ role: "user", parts: [{ text: userMessageText }] }] };
+
+                        const response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+
+                        const result = await response.json();
+
+                        if (result.candidates && result.candidates.length > 0 &&
+                            result.candidates[0].content && result.candidates[0].content.parts &&
+                            result.candidates[0].content.parts.length > 0) {
+                            const aiResponseText = result.candidates[0].content.parts[0].text;
+                            const newAIMessage = { sender: 'Rypd AI', text: aiResponseText, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
+                            chat.messages.push(newAIMessage);
+                            showMessage("AI response received!");
+                        } else {
+                            console.error("Gemini API response structure unexpected:", result);
+                            const errorMessage = "Rypd AI: Sorry, I couldn't generate a response right now. Please try again.";
+                            chat.messages.push({ sender: 'Rypd AI', text: errorMessage, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) });
+                            showMessage("Error from Rypd AI.");
+                        }
+                    } catch (error) {
+                        console.error("Error calling Gemini API for AI chat:", error);
+                        const errorMessage = "Rypd AI: I'm having trouble connecting. Please check your internet.";
+                        chat.messages.push({ sender: 'Rypd AI', text: errorMessage, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) });
+                        showMessage(`Network error: ${error.message}`);
+                    } finally {
+                        typingIndicator.classList.add('hidden'); // Hide typing indicator
+                        updateConversationDisplay(); // Update UI with AI's message
+                    }
+                } else {
+                    // Simulate a reply for non-AI chats
+                    setTimeout(() => {
+                        const simulatedReply = { sender: chat.name, text: `(Demo) Got your message: "${userMessageText}"`, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
+                        chat.messages.push(simulatedReply);
+                        showMessage("Message sent! (Demo only)");
+                        updateConversationDisplay();
+                    }, 1000);
+                }
+                chat.lastMessage = userMessageText; // Update last message in chat list
+            });
+
+            // Helper function to update the conversation display
+            function updateConversationDisplay() {
+                conversationDisplay.innerHTML = chat.messages.map(msg => `
+                    <div class="${msg.sender === 'You' ? 'text-right' : 'text-left'}">
+                        <span class="inline-block px-4 py-2 rounded-lg ${msg.sender === 'You' ? 'bg-gradient-to-r from-purple-600 to-blue-500 text-white' : 'bg-[#4A4A6A] text-[#F0F0F0]'}">
+                            <span class="font-semibold">${msg.sender === 'You' ? '' : msg.sender + ':'}</span> ${msg.text}
+                            <span class="block text-xs text-right ${msg.sender === 'You' ? 'text-blue-200' : 'text-[#A0A0A0]'}">${msg.time}</span>
+                        </span>
+                    </div>
+                `).join('');
+                conversationDisplay.scrollTop = conversationDisplay.scrollHeight; // Scroll to bottom
+            }
+        }
+
+
+        // --- Initialization ---
+
+        window.onload = async () => {
+            // Splash screen button listener
+            continueAppBtn.addEventListener('click', () => {
+                splashScreen.classList.add('splash-exit-animation'); // Start splash screen exit animation
+
+                setTimeout(() => {
+                    splashScreen.classList.add('hidden'); // Hide splash screen after animation
+                    contentArea.classList.remove('hidden');
+                    navBar.classList.remove('hidden');
+
+                    // Trigger app entry animation
+                    contentArea.classList.add('app-enter-animation');
+                    navBar.classList.add('app-enter-animation');
+
+                    // Initial page render after app UI is visible
+                    showPage(currentPage);
+                }, 800); // Match this timeout to the splash-exit transition duration
+            });
+
+            // New: Mousemove effect for splash screen background
+            splashScreen.addEventListener('mousemove', (e) => {
+                const rect = splashScreen.getBoundingClientRect();
+                const x = (e.clientX - rect.left) / rect.width * 100; // Percentage from left
+                const y = (e.clientY - rect.top) / rect.height * 100; // Percentage from top
+                splashScreen.style.setProperty('--mouse-x', `${x}%`);
+                splashScreen.style.setProperty('--mouse-y', `${y}%`);
+            });
+
+
+            try {
+                // --- YOUR FIREBASE CONFIGURATION ---
+                // Replace this entire block with your actual Firebase configuration.
+                // You copied this from the Firebase Console (Project settings -> General -> Your apps -> Firebase SDK snippet -> Config).
+                // It should look like:
+                // const YOUR_FIREBASE_CONFIG = {
+                //   apiKey: "AIzaSyCxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                //   authDomain: "your-project-id-12345.firebaseapp.com",
+                //   projectId: "your-project-id-12345",
+                //   storageBucket: "your-project-id-12345.appspot.com",
+                //   messagingSenderId: "123456789012",
+                //   appId: "1:123456789012:web:abcdef1234567890abcdef"
+                // };
+                const YOUR_FIREBASE_CONFIG = {
+                    apiKey: "AIzaSyCKW13ej5fGdtv-LpcKsuulsx6zM4aAJRw", // Corrected Firebase API Key
+                    authDomain: "rypd-demo.firebaseapp.com",
+                    projectId: "rypd-demo",
+                    storageBucket: "rypd-demo.firebasestorage.app",
+                    messagingSenderId: "806053873087",
+                    appId: "1:806053873087:web:0591e0b6ea6c8245818d0a"
+                };
+                window.app = initializeApp(YOUR_FIREBASE_CONFIG);
+                window.db = getFirestore(window.app);
+                window.auth = getAuth(window.app);
+                // --- END OF YOUR FIREBASE CONFIGURATION ---
+
+                // Sign in with custom token or anonymously
+                // If you are running locally, __initial_auth_token will be undefined.
+                // The app will then sign in anonymously using your Firebase project.
+                const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+                
+                // Added a check for non-empty token and a try-catch for signInWithCustomToken
+                // to gracefully fall back to anonymous sign-in if the custom token is invalid.
+                if (initialAuthToken && initialAuthToken.length > 0) {
+                    try {
+                        await signInWithCustomToken(window.auth, initialAuthToken);
+                        console.log("Signed in with custom token.");
+                    } catch (customTokenError) {
+                        console.warn("Custom token sign-in failed, attempting anonymous sign-in:", customTokenError);
+                        await signInAnonymously(window.auth);
+                        console.log("Signed in anonymously after custom token failure.");
+                    }
+                } else {
+                    await signInAnonymously(window.auth);
+                    console.log("Signed in anonymously.");
+                }
+
+                // Listen for auth state changes to set userId
+                onAuthStateChanged(window.auth, (user) => {
+                    if (user) {
+                        window.userId = user.uid;
+                        demoUserProfile.userId = user.uid; // Update demo profile with real user ID
+                        console.log("User authenticated:", user.uid);
+                    } else {
+                        window.userId = 'Not Authenticated (Demo)'; // Fallback for local run without auth
+                        demoUserProfile.userId = 'Not Authenticated (Demo)';
+                        console.log("User not authenticated.");
+                    }
+                    window.isAuthReady = true; // Mark auth as ready
+                    // The actual page rendering now happens after splash screen transition
+                });
+
+                // Set up navigation button click handlers
+                navButtons.feed.addEventListener('click', () => showPage('feed'));
+                navButtons.create.addEventListener('click', () => showPage('create'));
+                navButtons.profile.addEventListener('click', () => showPage('profile'));
+                navButtons.ai.addEventListener('click', () => showPage('ai'));
+                navButtons.challenges.addEventListener('click', () => showPage('challenges'));
+                navButtons.messages.addEventListener('click', () => showPage('messages'));
+
+            } catch (error) {
+                console.error("Error initializing Firebase or app:", error);
+                showMessage(`Initialization error: ${error.message}`);
+            }
+        };
+    </script>
+</body>
+</html>
